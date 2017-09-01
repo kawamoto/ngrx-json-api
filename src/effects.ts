@@ -19,6 +19,8 @@ import 'rxjs/add/operator/switchMapTo';
 import 'rxjs/add/operator/take';
 import 'rxjs/add/operator/toArray';
 import 'rxjs/add/operator/withLatestFrom';
+import 'rxjs/add/operator/takeWhile';
+import 'rxjs/add/operator/takeUntil';
 
 import {
   ApiApplyFailAction, ApiApplyInitAction,
@@ -114,6 +116,18 @@ export class NgrxJsonApiEffects implements OnDestroy {
         );
     });
 
+
+  private localQueryEventFor(query:Query){
+    return this.actions$.ofType<LocalQueryInitAction>(NgrxJsonApiActionTypes.LOCAL_QUERY_INIT)
+      .map(action => action instanceof LocalQueryInitAction)
+      .map((action: LocalQueryInitAction) => action.payload)
+      .filter(payload => query.queryId == payload.queryId);
+  }
+
+  private queryExists(query:Query){
+    return (state: NgrxJsonApiStore) => !_.isUndefined(state.queries[query.queryId]);
+  }
+
   @Effect()
   queryStore$ = this.actions$
     .ofType<LocalQueryInitAction>(NgrxJsonApiActionTypes.LOCAL_QUERY_INIT)
@@ -121,6 +135,8 @@ export class NgrxJsonApiEffects implements OnDestroy {
     .mergeMap((query: Query) => {
       return this.store
         .let(this.selectors.getNgrxJsonApiStore$())
+        .takeWhile(this.queryExists(query))
+        .takeUntil(this.localQueryEventFor(query))
         .let(this.selectors.queryStore$(query))
         .map(
           results =>
