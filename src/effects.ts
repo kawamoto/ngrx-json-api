@@ -88,7 +88,6 @@ export class NgrxJsonApiEffects implements OnDestroy {
           jsonApiData: response.body,
           query: payload.query,
         }))
-        .do(it => console.log(it))
         .catch(error =>
           Observable.of(
             new ApiPatchFailAction(this.toErrorPayload(payload.query, error))
@@ -117,16 +116,18 @@ export class NgrxJsonApiEffects implements OnDestroy {
     });
 
 
-  private localQueryEventFor(query:Query){
+  private localQueryInitEventFor(query:Query){
     return this.actions$.ofType<LocalQueryInitAction>(NgrxJsonApiActionTypes.LOCAL_QUERY_INIT)
-      .map(action => action instanceof LocalQueryInitAction)
-      .map((action: LocalQueryInitAction) => action.payload)
-      .filter(payload => query.queryId == payload.queryId);
+      .map(action => action as LocalQueryInitAction)
+      .filter(action => query.queryId == action.payload.queryId)
   }
 
-  private queryExists(query:Query){
-    return (state: NgrxJsonApiStore) => !_.isUndefined(state.queries[query.queryId]);
+  private removeQueryEventFor(query:Query){
+    return this.actions$.ofType<LocalQueryInitAction>(NgrxJsonApiActionTypes.REMOVE_QUERY)
+      .map(action => action as LocalQueryInitAction)
+      .filter(action => query.queryId == action.payload)
   }
+
 
   @Effect()
   queryStore$ = this.actions$
@@ -135,8 +136,6 @@ export class NgrxJsonApiEffects implements OnDestroy {
     .mergeMap((query: Query) => {
       return this.store
         .let(this.selectors.getNgrxJsonApiStore$())
-        .takeWhile(this.queryExists(query))
-        .takeUntil(this.localQueryEventFor(query))
         .let(this.selectors.queryStore$(query))
         .map(
           results =>
@@ -149,7 +148,9 @@ export class NgrxJsonApiEffects implements OnDestroy {
           Observable.of(
             new LocalQueryFailAction(this.toErrorPayload(query, error))
           )
-        );
+        )
+        .takeUntil(this.localQueryInitEventFor(query))
+        .takeUntil(this.removeQueryEventFor(query));
     });
 
   @Effect()
