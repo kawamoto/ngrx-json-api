@@ -294,47 +294,47 @@ export class NgrxJsonApiEffects implements OnDestroy {
     })
   );
 
-  @Effect()
-  refreshQueriesOnDelete$: Observable<Action> = this.actions$.pipe(
-    ofType(NgrxJsonApiActionTypes.API_DELETE_SUCCESS),
-    withLatestFrom(this.store, (action: ApiDeleteSuccessAction, store) => {
-      let id = { id: action.payload.query.id, type: action.payload.query.type };
-      if (!id.id || !id.type) {
-        throw new Error(
-          'API_DELETE_SUCCESS did not carry resource id and type information'
-        );
-      }
+  // @Effect()
+  // refreshQueriesOnDelete$: Observable<Action> = this.actions$.pipe(
+  //   ofType(NgrxJsonApiActionTypes.API_DELETE_SUCCESS),
+  //   withLatestFrom(this.store, (action: ApiDeleteSuccessAction, store) => {
+  //     let id = { id: action.payload.query.id, type: action.payload.query.type };
+  //     if (!id.id || !id.type) {
+  //       throw new Error(
+  //         'API_DELETE_SUCCESS did not carry resource id and type information'
+  //       );
+  //     }
 
-      let state = getNgrxJsonApiZone(store, action.zoneId);
-      let actions = [];
-      for (let queryId in state.queries) {
-        if (state.queries.hasOwnProperty(queryId)) {
-          let query = state.queries[queryId];
-          if (query.resultIds) {
-            let needsRefresh =
-              _.findIndex(query.resultIds, function(o) {
-                return _.isEqual(id, o);
-              }) !== -1;
+  //     let state = getNgrxJsonApiZone(store, action.zoneId);
+  //     let actions = [];
+  //     for (let queryId in state.queries) {
+  //       if (state.queries.hasOwnProperty(queryId)) {
+  //         let query = state.queries[queryId];
+  //         if (query.resultIds) {
+  //           let needsRefresh =
+  //             _.findIndex(query.resultIds, function(o) {
+  //               return _.isEqual(id, o);
+  //             }) !== -1;
 
-            let sameIdRequested =
-              query.query.id === id.id && query.query.type === id.type;
-            if (sameIdRequested && (needsRefresh || _.isEmpty(query.errors))) {
-              throw new Error(
-                'store is in invalid state, queries for deleted' +
-                  ' resource should have been emptied and marked with 404 error'
-              );
-            }
+  //           let sameIdRequested =
+  //             query.query.id === id.id && query.query.type === id.type;
+  //           if (sameIdRequested && (needsRefresh || _.isEmpty(query.errors))) {
+  //             throw new Error(
+  //               'store is in invalid state, queries for deleted' +
+  //                 ' resource should have been emptied and marked with 404 error'
+  //             );
+  //           }
 
-            if (needsRefresh) {
-              actions.push(new ApiQueryRefreshAction(queryId, action.zoneId));
-            }
-          }
-        }
-      }
-      return actions;
-    }),
-    flatMap(actions => of(...actions))
-  );
+  //           if (needsRefresh) {
+  //             actions.push(new ApiQueryRefreshAction(queryId, action.zoneId));
+  //           }
+  //         }
+  //       }
+  //     }
+  //     return actions;
+  //   }),
+  //   flatMap(actions => of(...actions))
+  // );
 
   private handlePendingCreate(pendingChange: StoreResource, zoneId: string) {
     let payload: Payload = this.generatePayload(pendingChange, 'POST');
