@@ -998,9 +998,8 @@ export const generateFilteringQueryParams = (
   }
   let filteringParams = filtering.map(f => {
     return (
-      'filter[' +
-      f.path +
-      ']' +
+      'filter' +
+      (f.path ? '[' + f.path + ']' : '') +
       (f.operator ? '[' + f.operator + ']' : '') +
       '=' +
       encodeURIComponent(f.value)
