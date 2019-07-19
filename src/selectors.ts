@@ -1,18 +1,6 @@
 import * as _ from 'lodash';
 
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/concat';
-import 'rxjs/add/observable/throw';
-import 'rxjs/add/operator/combineLatest';
-import 'rxjs/add/operator/concat';
-import 'rxjs/add/operator/concatMap';
-import 'rxjs/add/operator/distinctUntilChanged';
-import 'rxjs/add/operator/do';
-import 'rxjs/add/operator/filter';
-import 'rxjs/add/operator/let';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/mergeMap';
-import 'rxjs/add/observable/zip';
+import { Observable } from 'rxjs';
 
 import { filter, map } from 'rxjs/operators';
 
@@ -69,13 +57,9 @@ export function selectStoreQuery(
 
 export function selectStoreResourcesOfType(
   type: string
-): (
-  state: Observable<NgrxJsonApiStore>
-) => Observable<NgrxJsonApiStoreResources> {
+): (state: Observable<NgrxJsonApiStore>) => Observable<NgrxJsonApiStoreResources> {
   return (state$: Observable<NgrxJsonApiStore>) => {
-    return state$
-      .map(state => state.data)
-      .map(data => (data ? data[type] : undefined));
+    return state$.map(state => state.data).map(data => (data ? data[type] : undefined));
   };
 }
 
@@ -83,10 +67,7 @@ export function selectStoreResource(identifier: ResourceIdentifier) {
   return (state$: Observable<NgrxJsonApiStore>) => {
     return state$
       .let(selectStoreResourcesOfType(identifier.type))
-      .map(
-        resources =>
-          (resources ? resources[identifier.id] : undefined) as StoreResource
-      );
+      .map(resources => (resources ? resources[identifier.id] : undefined) as StoreResource);
   };
 }
 
@@ -124,8 +105,8 @@ export function selectManyQueryResult(
         };
         return queryResult;
       } else {
-        let results = storeQuery.resultIds.map(
-          id => (state.data[id.type] ? state.data[id.type][id.id] : undefined)
+        let results = storeQuery.resultIds.map(id =>
+          state.data[id.type] ? state.data[id.type][id.id] : undefined
         );
         if (denormalize) {
           results = denormaliseStoreResources(results, state.data);
@@ -158,15 +139,11 @@ export function selectOneQueryResult(
         return queryResult;
       } else {
         if (storeQuery.resultIds.length >= 2) {
-          throw new Error(
-            'expected single result for query ' + storeQuery.query.queryId
-          );
+          throw new Error('expected single result for query ' + storeQuery.query.queryId);
         }
 
         let resultId = storeQuery.resultIds[0];
-        let result = state.data[resultId.type]
-          ? state.data[resultId.type][resultId.id]
-          : undefined;
+        let result = state.data[resultId.type] ? state.data[resultId.type][resultId.id] : undefined;
         if (denormalize) {
           result = denormaliseStoreResource(result, state.data);
         }
@@ -199,12 +176,8 @@ export class NgrxJsonApiSelectors {
     };
   }
 
-  public getStoreData$(): (
-    state$: Store<NgrxJsonApiStore>
-  ) => Observable<NgrxJsonApiStoreData> {
-    return (
-      state$: Store<NgrxJsonApiStore>
-    ): Observable<NgrxJsonApiStoreData> => {
+  public getStoreData$(): (state$: Store<NgrxJsonApiStore>) => Observable<NgrxJsonApiStoreData> {
+    return (state$: Store<NgrxJsonApiStore>): Observable<NgrxJsonApiStoreData> => {
       return state$.select('data');
     };
   }

@@ -1,7 +1,6 @@
 import * as _ from 'lodash';
 
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/finally';
+import { Observable } from 'rxjs';
 
 import { Store } from '@ngrx/store';
 
@@ -110,9 +109,7 @@ export class NgrxJsonApiZoneService {
    */
   public putQuery(options: PutQueryOptions) {
     let query = options.query;
-    let fromServer = _.isUndefined(options.fromServer)
-      ? true
-      : options.fromServer;
+    let fromServer = _.isUndefined(options.fromServer) ? true : options.fromServer;
 
     if (!query.queryId) {
       throw new Error('to query must have a queryId');
@@ -139,10 +136,7 @@ export class NgrxJsonApiZoneService {
    * @param queryId
    * @returns observable holding the data as array of resources.
    */
-  public selectManyResults(
-    queryId: string,
-    denormalize = false
-  ): Observable<ManyQueryResult> {
+  public selectManyResults(queryId: string, denormalize = false): Observable<ManyQueryResult> {
     return this.store
       .let(selectNgrxJsonApiZone(this.zoneId))
       .let(selectManyQueryResult(queryId, denormalize));
@@ -154,10 +148,7 @@ export class NgrxJsonApiZoneService {
    * @param queryId
    * @returns observable holding the data as array of resources.
    */
-  public selectOneResults(
-    queryId: string,
-    denormalize = false
-  ): Observable<OneQueryResult> {
+  public selectOneResults(queryId: string, denormalize = false): Observable<OneQueryResult> {
     return this.store
       .let(selectNgrxJsonApiZone(this.zoneId))
       .let(selectOneQueryResult(queryId, denormalize));
@@ -167,21 +158,15 @@ export class NgrxJsonApiZoneService {
    * @param identifier of the resource
    * @returns observable of the resource
    */
-  public selectStoreResource(
-    identifier: ResourceIdentifier
-  ): Observable<StoreResource> {
-    return this.store
-      .let(selectNgrxJsonApiZone(this.zoneId))
-      .let(selectStoreResource(identifier));
+  public selectStoreResource(identifier: ResourceIdentifier): Observable<StoreResource> {
+    return this.store.let(selectNgrxJsonApiZone(this.zoneId)).let(selectStoreResource(identifier));
   }
 
   /**
    * @param identifiers of the resources
    * @returns observable of the resources
    */
-  public selectStoreResources(
-    identifiers: ResourceIdentifier[]
-  ): Observable<StoreResource[]> {
+  public selectStoreResources(identifiers: ResourceIdentifier[]): Observable<StoreResource[]> {
     return this.store
       .let(selectNgrxJsonApiZone(this.zoneId))
       .let(selectStoreResources(identifiers));
@@ -199,9 +184,7 @@ export class NgrxJsonApiZoneService {
 
     const queryId = uuid();
     if (toRemote) {
-      this.store.dispatch(
-        new ApiPatchInitAction(resource, queryId, this.zoneId)
-      );
+      this.store.dispatch(new ApiPatchInitAction(resource, queryId, this.zoneId));
     } else {
       this.store.dispatch(new PatchStoreResourceAction(resource, this.zoneId));
     }
@@ -237,9 +220,7 @@ export class NgrxJsonApiZoneService {
 
     const queryId = uuid();
     if (toRemote) {
-      this.store.dispatch(
-        new ApiPostInitAction(resource, queryId, this.zoneId)
-      );
+      this.store.dispatch(new ApiPostInitAction(resource, queryId, this.zoneId));
     } else {
       this.store.dispatch(new PostStoreResourceAction(resource, this.zoneId));
     }
@@ -256,21 +237,15 @@ export class NgrxJsonApiZoneService {
    *
    * @param resourceId
    */
-  public deleteResource(
-    options: DeleteResourceOptions
-  ): Observable<QueryResult> {
+  public deleteResource(options: DeleteResourceOptions): Observable<QueryResult> {
     let resourceId = options.resourceId;
     let toRemote = _.isUndefined(options.toRemote) ? false : options.toRemote;
 
     const queryId = uuid();
     if (toRemote) {
-      this.store.dispatch(
-        new ApiDeleteInitAction(resourceId, queryId, this.zoneId)
-      );
+      this.store.dispatch(new ApiDeleteInitAction(resourceId, queryId, this.zoneId));
     } else {
-      this.store.dispatch(
-        new DeleteStoreResourceAction(resourceId, this.zoneId)
-      );
+      this.store.dispatch(new DeleteStoreResourceAction(resourceId, this.zoneId));
     }
     return this.store
       .let(selectNgrxJsonApiZone(this.zoneId))
@@ -306,10 +281,7 @@ export class NgrxJsonApiZoneService {
    * @param id
    * @param errors
    */
-  public addResourceErrors(
-    id: ResourceIdentifier,
-    errors: Array<ResourceError>
-  ) {
+  public addResourceErrors(id: ResourceIdentifier, errors: Array<ResourceError>) {
     this.store.dispatch(
       new ModifyStoreResourceErrorsAction(
         {
@@ -327,10 +299,7 @@ export class NgrxJsonApiZoneService {
    * @param id
    * @param errors
    */
-  public removeResourceErrors(
-    id: ResourceIdentifier,
-    errors: Array<ResourceError>
-  ) {
+  public removeResourceErrors(id: ResourceIdentifier, errors: Array<ResourceError>) {
     this.store.dispatch(
       new ModifyStoreResourceErrorsAction(
         {
@@ -348,10 +317,7 @@ export class NgrxJsonApiZoneService {
    * @param id
    * @param errors
    */
-  public setResourceErrors(
-    id: ResourceIdentifier,
-    errors: Array<ResourceError>
-  ) {
+  public setResourceErrors(id: ResourceIdentifier, errors: Array<ResourceError>) {
     this.store.dispatch(
       new ModifyStoreResourceErrorsAction(
         {
@@ -406,17 +372,10 @@ export class NgrxJsonApiService extends NgrxJsonApiZoneService {
     return this._storeSnapshot;
   }
 
-  private findInternal(
-    options: FindOptions,
-    multi: boolean
-  ): Observable<QueryResult> {
+  private findInternal(options: FindOptions, multi: boolean): Observable<QueryResult> {
     let query = options.query;
-    let fromServer = _.isUndefined(options.fromServer)
-      ? true
-      : options.fromServer;
-    let denormalise = _.isUndefined(options.denormalise)
-      ? false
-      : options.denormalise;
+    let fromServer = _.isUndefined(options.fromServer) ? true : options.fromServer;
+    let denormalise = _.isUndefined(options.denormalise) ? false : options.denormalise;
 
     let newQuery: Query;
     if (!query.queryId) {
@@ -432,9 +391,7 @@ export class NgrxJsonApiService extends NgrxJsonApiZoneService {
     } else {
       queryResult$ = this.selectOneResults(newQuery.queryId, denormalise);
     }
-    return <Observable<QueryResult>>queryResult$.finally(() =>
-      this.removeQuery(newQuery.queryId)
-    );
+    return <Observable<QueryResult>>queryResult$.finally(() => this.removeQuery(newQuery.queryId));
   }
 
   private uuid() {
@@ -449,10 +406,7 @@ export class NgrxJsonApiService extends NgrxJsonApiZoneService {
    */
   public getPersistedResourceSnapshot(identifier: ResourceIdentifier) {
     let snapshot = this.storeSnapshot;
-    if (
-      snapshot.data[identifier.type] &&
-      snapshot.data[identifier.type][identifier.id]
-    ) {
+    if (snapshot.data[identifier.type] && snapshot.data[identifier.type][identifier.id]) {
       return snapshot.data[identifier.type][identifier.id].persistedResource;
     }
     return null;
@@ -466,10 +420,7 @@ export class NgrxJsonApiService extends NgrxJsonApiZoneService {
    */
   public getResourceSnapshot(identifier: ResourceIdentifier) {
     let snapshot = this.storeSnapshot;
-    if (
-      snapshot.data[identifier.type] &&
-      snapshot.data[identifier.type][identifier.id]
-    ) {
+    if (snapshot.data[identifier.type] && snapshot.data[identifier.type][identifier.id]) {
       return snapshot.data[identifier.type][identifier.id];
     }
     return null;
@@ -479,18 +430,10 @@ export class NgrxJsonApiService extends NgrxJsonApiZoneService {
     storeResource$: Observable<StoreResource | StoreResource[]>
   ): Observable<StoreResource | StoreResource[]> {
     return storeResource$.combineLatest(
-      this.store
-        .let(selectNgrxJsonApiZone(this.zoneId))
-        .map(state => state.data),
-      (
-        storeResource: StoreResource | StoreResource[],
-        storeData: NgrxJsonApiStoreData
-      ) => {
+      this.store.let(selectNgrxJsonApiZone(this.zoneId)).map(state => state.data),
+      (storeResource: StoreResource | StoreResource[], storeData: NgrxJsonApiStoreData) => {
         if (_.isArray(storeResource)) {
-          return denormaliseStoreResources(
-            storeResource as Array<StoreResource>,
-            storeData
-          );
+          return denormaliseStoreResources(storeResource as Array<StoreResource>, storeData);
         } else {
           let resource = storeResource as StoreResource;
           return denormaliseStoreResource(resource, storeData) as StoreResource;
@@ -500,23 +443,12 @@ export class NgrxJsonApiService extends NgrxJsonApiZoneService {
   }
 
   public getDenormalisedPath(path: string, resourceType: string): string {
-    let pathSeparator = _.get(
-      this.config,
-      'filteringConfig.pathSeparator'
-    ) as string;
-    return getDenormalisedPath(
-      path,
-      resourceType,
-      this.config.resourceDefinitions,
-      pathSeparator
-    );
+    let pathSeparator = _.get(this.config, 'filteringConfig.pathSeparator') as string;
+    return getDenormalisedPath(path, resourceType, this.config.resourceDefinitions, pathSeparator);
   }
 
   public getDenormalisedValue(path: string, storeResource: StoreResource): any {
-    let pathSeparator = _.get(
-      this.config,
-      'filteringConfig.pathSeparator'
-    ) as string;
+    let pathSeparator = _.get(this.config, 'filteringConfig.pathSeparator') as string;
     return getDenormalisedValue(
       path,
       storeResource,

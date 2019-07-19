@@ -1,3 +1,4 @@
+import { throwError as observableThrowError, Observable } from 'rxjs';
 import * as _ from 'lodash';
 
 import {
@@ -13,9 +14,6 @@ import {
 } from '@angular/common/http';
 
 import { ErrorObservable } from 'rxjs/observable/ErrorObservable';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/observable/throw';
 
 import {
   Document,
@@ -137,7 +135,7 @@ export class NgrxJsonApi {
     let pageParams = '';
 
     if (typeof query === undefined) {
-      return Observable.throw('Query not found');
+      return observableThrowError('Query not found');
     }
 
     if (query.hasOwnProperty('params') && !_.isEmpty(query.params)) {
@@ -187,11 +185,11 @@ export class NgrxJsonApi {
 
   public create(query: Query, document: Document): Observable<any> {
     if (typeof query === undefined) {
-      return Observable.throw('Query not found');
+      return observableThrowError('Query not found');
     }
 
     if (typeof document === undefined) {
-      return Observable.throw('Data not found');
+      return observableThrowError('Data not found');
     }
 
     let requestOptions = {
@@ -205,11 +203,11 @@ export class NgrxJsonApi {
 
   public update(query: Query, document: Document): Observable<any> {
     if (typeof query === undefined) {
-      return Observable.throw('Query not found');
+      return observableThrowError('Query not found');
     }
 
     if (typeof document === undefined) {
-      return Observable.throw('Data not found');
+      return observableThrowError('Data not found');
     }
     let requestOptions = {
       method: 'PATCH',
@@ -222,7 +220,7 @@ export class NgrxJsonApi {
 
   public delete(query: Query): Observable<any> {
     if (typeof query === undefined) {
-      return Observable.throw('Query not found');
+      return observableThrowError('Query not found');
     }
 
     let requestOptions = {

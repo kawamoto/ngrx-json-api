@@ -1,3 +1,4 @@
+import { throwError as observableThrowError, Observable, of } from 'rxjs';
 import { Injectable, OnDestroy } from '@angular/core';
 
 import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
@@ -7,10 +8,6 @@ import * as _ from 'lodash';
 import { Action, Store } from '@ngrx/store';
 import { Actions, Effect, ofType } from '@ngrx/effects';
 
-import { Observable } from 'rxjs/Observable';
-import { of } from 'rxjs/observable/of';
-
-import 'rxjs/add/operator/concatAll';
 import {
   catchError,
   concatAll,
@@ -72,12 +69,7 @@ import {
   ResourceError,
   StoreResource,
 } from './interfaces';
-import {
-  generatePayload,
-  getPendingChanges,
-  sortPendingChanges,
-  filterResources,
-} from './utils';
+import { generatePayload, getPendingChanges, sortPendingChanges, filterResources } from './utils';
 
 @Injectable()
 export class NgrxJsonApiEffects implements OnDestroy {
@@ -159,12 +151,7 @@ export class NgrxJsonApiEffects implements OnDestroy {
             )
         ),
         catchError(error =>
-          of(
-            new ApiGetFailAction(
-              this.toErrorPayload(query, error),
-              action.zoneId
-            )
-          )
+          of(new ApiGetFailAction(this.toErrorPayload(query, error), action.zoneId))
         )
       );
     })
@@ -206,12 +193,7 @@ export class NgrxJsonApiEffects implements OnDestroy {
               )
           ),
           catchError(error =>
-            of(
-              new LocalQueryFailAction(
-                this.toErrorPayload(query, error),
-                action.zoneId
-              )
-            )
+            of(new LocalQueryFailAction(this.toErrorPayload(query, error), action.zoneId))
           ),
           takeUntil(this.localQueryInitEventFor(query)),
           takeUntil(this.removeQueryEventFor(query))
@@ -223,21 +205,16 @@ export class NgrxJsonApiEffects implements OnDestroy {
     return (state$: Observable<NgrxJsonApiStore>) => {
       let selected$: Observable<any>;
       if (!query.type) {
-        return state$.map(() => Observable.throw('Unknown query'));
+        return state$.map(() => observableThrowError('Unknown query'));
       } else if (query.type && query.id) {
-        selected$ = state$.let(
-          selectStoreResource({ type: query.type, id: query.id })
-        );
+        selected$ = state$.let(selectStoreResource({ type: query.type, id: query.id }));
       } else {
         selected$ = state$
           .let(selectStoreResourcesOfType(query.type))
           .pipe(
             combineLatest(
               state$.map(it => it.data),
-              (
-                resources: NgrxJsonApiStoreResources,
-                storeData: NgrxJsonApiStoreData
-              ) =>
+              (resources: NgrxJsonApiStoreResources, storeData: NgrxJsonApiStoreData) =>
                 filterResources(
                   resources,
                   storeData,
@@ -351,13 +328,7 @@ export class NgrxJsonApiEffects implements OnDestroy {
           )
       ),
       catchError(error =>
-        of(
-          new ApiPostFailAction(
-            this.toErrorPayload(payload.query, error),
-            null,
-            zoneId
-          )
-        )
+        of(new ApiPostFailAction(this.toErrorPayload(payload.query, error), null, zoneId))
       )
     );
   }
@@ -377,13 +348,7 @@ export class NgrxJsonApiEffects implements OnDestroy {
           )
       ),
       catchError(error =>
-        of(
-          new ApiPatchFailAction(
-            this.toErrorPayload(payload.query, error),
-            null,
-            zoneId
-          )
-        )
+        of(new ApiPatchFailAction(this.toErrorPayload(payload.query, error), null, zoneId))
       )
     );
   }
@@ -403,13 +368,7 @@ export class NgrxJsonApiEffects implements OnDestroy {
           )
       ),
       catchError(error =>
-        of(
-          new ApiDeleteFailAction(
-            this.toErrorPayload(payload.query, error),
-            null,
-            zoneId
-          )
-        )
+        of(new ApiDeleteFailAction(this.toErrorPayload(payload.query, error), null, zoneId))
       )
     );
   }
@@ -418,57 +377,44 @@ export class NgrxJsonApiEffects implements OnDestroy {
   applyResources$: Observable<Action> = this.actions$.pipe(
     ofType(NgrxJsonApiActionTypes.API_APPLY_INIT),
     filter(() => this.jsonApi.config.applyEnabled !== false),
-    withLatestFrom(
-      this.store,
-      (action: ApiApplyInitAction, storeState: any) => {
-        const ngrxstore = getNgrxJsonApiZone(storeState, action.zoneId);
-        const payload = (action as ApiApplyInitAction).payload;
-        const pending: Array<StoreResource> = getPendingChanges(
-          ngrxstore.data,
-          payload.ids,
-          payload.include
-        );
+    withLatestFrom(this.store, (action: ApiApplyInitAction, storeState: any) => {
+      const ngrxstore = getNgrxJsonApiZone(storeState, action.zoneId);
+      const payload = (action as ApiApplyInitAction).payload;
+      const pending: Array<StoreResource> = getPendingChanges(
+        ngrxstore.data,
+        payload.ids,
+        payload.include
+      );
 
-        if (pending.length === 0) {
-          return of(new ApiApplySuccessAction([], action.zoneId));
-        }
-        const sortedPending = sortPendingChanges(pending);
-        let actions: Array<Observable<Action>> = [];
-        for (let pendingChange of sortedPending) {
-          if (pendingChange.state === 'CREATED') {
-            actions.push(
-              this.handlePendingCreate(pendingChange, action.zoneId)
-            );
-          } else if (pendingChange.state === 'UPDATED') {
-            actions.push(
-              this.handlePendingUpdate(pendingChange, action.zoneId)
-            );
-          } else if (pendingChange.state === 'DELETED') {
-            actions.push(
-              this.handlePendingDelete(pendingChange, action.zoneId)
-            );
-          } else {
-            throw new Error('unknown state ' + pendingChange.state);
-          }
-        }
-        return of(...actions)
-          .concatAll()
-          .pipe(
-            toArray(),
-            map(actions => this.toApplyAction(actions, action.zoneId))
-          );
+      if (pending.length === 0) {
+        return of(new ApiApplySuccessAction([], action.zoneId));
       }
-    ),
+      const sortedPending = sortPendingChanges(pending);
+      let actions: Array<Observable<Action>> = [];
+      for (let pendingChange of sortedPending) {
+        if (pendingChange.state === 'CREATED') {
+          actions.push(this.handlePendingCreate(pendingChange, action.zoneId));
+        } else if (pendingChange.state === 'UPDATED') {
+          actions.push(this.handlePendingUpdate(pendingChange, action.zoneId));
+        } else if (pendingChange.state === 'DELETED') {
+          actions.push(this.handlePendingDelete(pendingChange, action.zoneId));
+        } else {
+          throw new Error('unknown state ' + pendingChange.state);
+        }
+      }
+      return of(...actions)
+        .concatAll()
+        .pipe(
+          toArray(),
+          map(actions => this.toApplyAction(actions, action.zoneId))
+        );
+    }),
     flatMap(actions => actions)
   );
 
   private config: NgrxJsonApiConfig;
 
-  constructor(
-    private actions$: Actions,
-    private jsonApi: NgrxJsonApi,
-    private store: Store<any>
-  ) {
+  constructor(private actions$: Actions, private jsonApi: NgrxJsonApi, private store: Store<any>) {
     this.config = this.jsonApi.config;
   }
 
@@ -487,27 +433,16 @@ export class NgrxJsonApiEffects implements OnDestroy {
     return new ApiApplySuccessAction(actions, zoneId);
   }
 
-  private toErrorPayload(
-    query: Query,
-    response: HttpErrorResponse | any
-  ): Payload {
+  private toErrorPayload(query: Query, response: HttpErrorResponse | any): Payload {
     let contentType: String = null;
     if (response && response.headers) {
       contentType = response.headers.get('Content-Type');
     }
     let document = null;
-    if (
-      contentType != null &&
-      contentType.startsWith('application/vnd.api+json')
-    ) {
+    if (contentType != null && contentType.startsWith('application/vnd.api+json')) {
       document = response;
     }
-    if (
-      document &&
-      document.error &&
-      document.error.errors &&
-      document.error.errors.length > 0
-    ) {
+    if (document && document.error && document.error.errors && document.error.errors.length > 0) {
       return {
         query: query,
         jsonApiData: document.error,
@@ -532,10 +467,7 @@ export class NgrxJsonApiEffects implements OnDestroy {
     }
   }
 
-  private generatePayload(
-    resource: Resource,
-    operation: OperationType
-  ): Payload {
+  private generatePayload(resource: Resource, operation: OperationType): Payload {
     return generatePayload(resource, operation);
   }
 }
