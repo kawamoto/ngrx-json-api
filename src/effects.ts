@@ -158,22 +158,6 @@ export class NgrxJsonApiEffects implements OnDestroy {
     })
   );
 
-  private localQueryInitEventFor(query: Query) {
-    return this.actions$.pipe(
-      ofType<LocalQueryInitAction>(NgrxJsonApiActionTypes.LOCAL_QUERY_INIT),
-      map(action => action as LocalQueryInitAction),
-      filter(action => query.queryId == action.payload.queryId)
-    );
-  }
-
-  private removeQueryEventFor(query: Query) {
-    return this.actions$.pipe(
-      ofType<LocalQueryInitAction>(NgrxJsonApiActionTypes.REMOVE_QUERY),
-      map(action => action as LocalQueryInitAction),
-      filter(action => query.queryId == action.payload)
-    );
-  }
-
   @Effect()
   queryStore$ = this.actions$.pipe(
     ofType<LocalQueryInitAction>(NgrxJsonApiActionTypes.LOCAL_QUERY_INIT),
@@ -200,33 +184,6 @@ export class NgrxJsonApiEffects implements OnDestroy {
       );
     })
   );
-
-  private executeLocalQuery(query: Query) {
-    return (state$: Observable<NgrxJsonApiStore>) => {
-      let selected$: Observable<any>;
-      if (!query.type) {
-        return state$.pipe(map(() => observableThrowError('Unknown query')));
-      } else if (query.type && query.id) {
-        selected$ = state$.pipe(selectStoreResource({ type: query.type, id: query.id }));
-      } else {
-        selected$ = state$.pipe(
-          selectStoreResourcesOfType(query.type),
-          combineLatest(
-            state$.pipe(map(it => it.data)),
-            (resources: NgrxJsonApiStoreResources, storeData: NgrxJsonApiStoreData) =>
-              filterResources(
-                resources,
-                storeData,
-                query,
-                this.config.resourceDefinitions,
-                this.config.filteringConfig
-              )
-          )
-        );
-      }
-      return selected$.pipe(distinctUntilChanged());
-    };
-  }
 
   @Effect()
   deleteResource$ = this.actions$.pipe(
@@ -312,6 +269,95 @@ export class NgrxJsonApiEffects implements OnDestroy {
   //   flatMap(actions => of(...actions))
   // );
 
+  @Effect()
+  applyResources$: Observable<Action> = this.actions$.pipe(
+    ofType(NgrxJsonApiActionTypes.API_APPLY_INIT),
+    filter(() => this.jsonApi.config.applyEnabled !== false),
+    withLatestFrom(this.store, (action: ApiApplyInitAction, storeState: any) => {
+      const ngrxstore = getNgrxJsonApiZone(storeState, action.zoneId);
+      const payload = (action as ApiApplyInitAction).payload;
+      const pending: Array<StoreResource> = getPendingChanges(
+        ngrxstore.data,
+        payload.ids,
+        payload.include
+      );
+
+      if (pending.length === 0) {
+        return of(new ApiApplySuccessAction([], action.zoneId));
+      }
+      const sortedPending = sortPendingChanges(pending);
+      let actions: Array<Observable<Action>> = [];
+      for (let pendingChange of sortedPending) {
+        if (pendingChange.state === 'CREATED') {
+          actions.push(this.handlePendingCreate(pendingChange, action.zoneId));
+        } else if (pendingChange.state === 'UPDATED') {
+          actions.push(this.handlePendingUpdate(pendingChange, action.zoneId));
+        } else if (pendingChange.state === 'DELETED') {
+          actions.push(this.handlePendingDelete(pendingChange, action.zoneId));
+        } else {
+          throw new Error('unknown state ' + pendingChange.state);
+        }
+      }
+      return of(...actions).pipe(
+        concatAll(),
+        toArray(),
+        map(actions => this.toApplyAction(actions, action.zoneId))
+      );
+    }),
+    flatMap(actions => actions)
+  );
+
+  private config: NgrxJsonApiConfig;
+
+  constructor(private actions$: Actions, private jsonApi: NgrxJsonApi, private store: Store<any>) {
+    this.config = this.jsonApi.config;
+  }
+
+  ngOnDestroy() {}
+
+  private localQueryInitEventFor(query: Query) {
+    return this.actions$.pipe(
+      ofType<LocalQueryInitAction>(NgrxJsonApiActionTypes.LOCAL_QUERY_INIT),
+      map(action => action as LocalQueryInitAction),
+      filter(action => query.queryId == action.payload.queryId)
+    );
+  }
+
+  private removeQueryEventFor(query: Query) {
+    return this.actions$.pipe(
+      ofType<LocalQueryInitAction>(NgrxJsonApiActionTypes.REMOVE_QUERY),
+      map(action => action as LocalQueryInitAction),
+      filter(action => query.queryId == action.payload)
+    );
+  }
+
+  private executeLocalQuery(query: Query) {
+    return (state$: Observable<NgrxJsonApiStore>) => {
+      let selected$: Observable<any>;
+      if (!query.type) {
+        return state$.pipe(map(() => observableThrowError('Unknown query')));
+      } else if (query.type && query.id) {
+        selected$ = state$.pipe(selectStoreResource({ type: query.type, id: query.id }));
+      } else {
+        selected$ = state$.pipe(
+          selectStoreResourcesOfType(query.type),
+          combineLatest(
+            state$.pipe(map(it => it.data)),
+            (resources: NgrxJsonApiStoreResources, storeData: NgrxJsonApiStoreData) =>
+              filterResources(
+                resources,
+                storeData,
+                query,
+                this.config.resourceDefinitions,
+                this.config.filteringConfig
+              )
+          )
+        );
+      }
+      return selected$.pipe(distinctUntilChanged());
+    };
+  }
+
   private handlePendingCreate(pendingChange: StoreResource, zoneId: string) {
     let payload: Payload = this.generatePayload(pendingChange, 'POST');
     return this.jsonApi.create(payload.query, payload.jsonApiData).pipe(
@@ -371,52 +417,6 @@ export class NgrxJsonApiEffects implements OnDestroy {
       )
     );
   }
-
-  @Effect()
-  applyResources$: Observable<Action> = this.actions$.pipe(
-    ofType(NgrxJsonApiActionTypes.API_APPLY_INIT),
-    filter(() => this.jsonApi.config.applyEnabled !== false),
-    withLatestFrom(this.store, (action: ApiApplyInitAction, storeState: any) => {
-      const ngrxstore = getNgrxJsonApiZone(storeState, action.zoneId);
-      const payload = (action as ApiApplyInitAction).payload;
-      const pending: Array<StoreResource> = getPendingChanges(
-        ngrxstore.data,
-        payload.ids,
-        payload.include
-      );
-
-      if (pending.length === 0) {
-        return of(new ApiApplySuccessAction([], action.zoneId));
-      }
-      const sortedPending = sortPendingChanges(pending);
-      let actions: Array<Observable<Action>> = [];
-      for (let pendingChange of sortedPending) {
-        if (pendingChange.state === 'CREATED') {
-          actions.push(this.handlePendingCreate(pendingChange, action.zoneId));
-        } else if (pendingChange.state === 'UPDATED') {
-          actions.push(this.handlePendingUpdate(pendingChange, action.zoneId));
-        } else if (pendingChange.state === 'DELETED') {
-          actions.push(this.handlePendingDelete(pendingChange, action.zoneId));
-        } else {
-          throw new Error('unknown state ' + pendingChange.state);
-        }
-      }
-      return of(...actions).pipe(
-        concatAll(),
-        toArray(),
-        map(actions => this.toApplyAction(actions, action.zoneId))
-      );
-    }),
-    flatMap(actions => actions)
-  );
-
-  private config: NgrxJsonApiConfig;
-
-  constructor(private actions$: Actions, private jsonApi: NgrxJsonApi, private store: Store<any>) {
-    this.config = this.jsonApi.config;
-  }
-
-  ngOnDestroy() {}
 
   private toApplyAction(actions: Array<Action>, zoneId: string): any {
     for (let action of actions) {
