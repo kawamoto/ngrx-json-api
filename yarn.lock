@@ -4852,11 +4852,6 @@ rollup@^0.55.1:
   version "0.55.3"
   resolved "https://registry.yarnpkg.com/rollup/-/rollup-0.55.3.tgz#0af082a766d51c3058430c8372442ff5207d8736"
 
-rxjs-compat@~6.2.0:
-  version "6.2.2"
-  resolved "https://registry.yarnpkg.com/rxjs-compat/-/rxjs-compat-6.2.2.tgz#3c0fcdb46130cc70aa55412c2b1147905ab4680a"
-  integrity sha512-h113JzEXnqBd6JQ8TYg33oDuM3baZ9WKS49rtbMX0gBW2Kz0z4wDZ0/pCA0T9sRJM1HkZT6mt45gpYOJ2MqWYQ==
-
 rxjs@~6.2.0:
   version "6.2.2"
   resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-6.2.2.tgz#eb75fa3c186ff5289907d06483a77884586e1cf9"
