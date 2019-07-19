@@ -13,6 +13,7 @@ import {
   concatAll,
   combineLatest,
   debounceTime,
+  distinctUntilChanged,
   filter,
   flatMap,
   map,
@@ -178,26 +179,25 @@ export class NgrxJsonApiEffects implements OnDestroy {
     ofType<LocalQueryInitAction>(NgrxJsonApiActionTypes.LOCAL_QUERY_INIT),
     mergeMap((action: LocalQueryInitAction) => {
       const query = action.payload;
-      return this.store
-        .let(selectNgrxJsonApiZone(action.zoneId))
-        .let(this.executeLocalQuery(query))
-        .pipe(
-          map(
-            results =>
-              new LocalQuerySuccessAction(
-                {
-                  jsonApiData: { data: results },
-                  query: query,
-                },
-                action.zoneId
-              )
-          ),
-          catchError(error =>
-            of(new LocalQueryFailAction(this.toErrorPayload(query, error), action.zoneId))
-          ),
-          takeUntil(this.localQueryInitEventFor(query)),
-          takeUntil(this.removeQueryEventFor(query))
-        );
+      return this.store.pipe(
+        selectNgrxJsonApiZone(action.zoneId),
+        this.executeLocalQuery(query),
+        map(
+          results =>
+            new LocalQuerySuccessAction(
+              {
+                jsonApiData: { data: results },
+                query: query,
+              },
+              action.zoneId
+            )
+        ),
+        catchError(error =>
+          of(new LocalQueryFailAction(this.toErrorPayload(query, error), action.zoneId))
+        ),
+        takeUntil(this.localQueryInitEventFor(query)),
+        takeUntil(this.removeQueryEventFor(query))
+      );
     })
   );
 
@@ -205,27 +205,26 @@ export class NgrxJsonApiEffects implements OnDestroy {
     return (state$: Observable<NgrxJsonApiStore>) => {
       let selected$: Observable<any>;
       if (!query.type) {
-        return state$.map(() => observableThrowError('Unknown query'));
+        return state$.pipe(map(() => observableThrowError('Unknown query')));
       } else if (query.type && query.id) {
-        selected$ = state$.let(selectStoreResource({ type: query.type, id: query.id }));
+        selected$ = state$.pipe(selectStoreResource({ type: query.type, id: query.id }));
       } else {
-        selected$ = state$
-          .let(selectStoreResourcesOfType(query.type))
-          .pipe(
-            combineLatest(
-              state$.map(it => it.data),
-              (resources: NgrxJsonApiStoreResources, storeData: NgrxJsonApiStoreData) =>
-                filterResources(
-                  resources,
-                  storeData,
-                  query,
-                  this.config.resourceDefinitions,
-                  this.config.filteringConfig
-                )
-            )
-          );
+        selected$ = state$.pipe(
+          selectStoreResourcesOfType(query.type),
+          combineLatest(
+            state$.pipe(map(it => it.data)),
+            (resources: NgrxJsonApiStoreResources, storeData: NgrxJsonApiStoreData) =>
+              filterResources(
+                resources,
+                storeData,
+                query,
+                this.config.resourceDefinitions,
+                this.config.filteringConfig
+              )
+          )
+        );
       }
-      return selected$.distinctUntilChanged();
+      return selected$.pipe(distinctUntilChanged());
     };
   }
 
@@ -402,12 +401,11 @@ export class NgrxJsonApiEffects implements OnDestroy {
           throw new Error('unknown state ' + pendingChange.state);
         }
       }
-      return of(...actions)
-        .concatAll()
-        .pipe(
-          toArray(),
-          map(actions => this.toApplyAction(actions, action.zoneId))
-        );
+      return of(...actions).pipe(
+        concatAll(),
+        toArray(),
+        map(actions => this.toApplyAction(actions, action.zoneId))
+      );
     }),
     flatMap(actions => actions)
   );

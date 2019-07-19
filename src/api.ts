@@ -13,8 +13,6 @@ import {
   HttpUserEvent,
 } from '@angular/common/http';
 
-import { ErrorObservable } from 'rxjs/observable/ErrorObservable';
-
 import {
   Document,
   NgrxJsonApiConfig,

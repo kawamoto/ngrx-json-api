@@ -1,6 +1,7 @@
 import * as _ from 'lodash';
 
 import { Observable } from 'rxjs';
+import { finalize, combineLatest, map } from 'rxjs/operators';
 
 import { Store } from '@ngrx/store';
 
@@ -137,9 +138,10 @@ export class NgrxJsonApiZoneService {
    * @returns observable holding the data as array of resources.
    */
   public selectManyResults(queryId: string, denormalize = false): Observable<ManyQueryResult> {
-    return this.store
-      .let(selectNgrxJsonApiZone(this.zoneId))
-      .let(selectManyQueryResult(queryId, denormalize));
+    return this.store.pipe(
+      selectNgrxJsonApiZone(this.zoneId),
+      selectManyQueryResult(queryId, denormalize)
+    );
   }
 
   /**
@@ -149,9 +151,10 @@ export class NgrxJsonApiZoneService {
    * @returns observable holding the data as array of resources.
    */
   public selectOneResults(queryId: string, denormalize = false): Observable<OneQueryResult> {
-    return this.store
-      .let(selectNgrxJsonApiZone(this.zoneId))
-      .let(selectOneQueryResult(queryId, denormalize));
+    return this.store.pipe(
+      selectNgrxJsonApiZone(this.zoneId),
+      selectOneQueryResult(queryId, denormalize)
+    );
   }
 
   /**
@@ -159,7 +162,10 @@ export class NgrxJsonApiZoneService {
    * @returns observable of the resource
    */
   public selectStoreResource(identifier: ResourceIdentifier): Observable<StoreResource> {
-    return this.store.let(selectNgrxJsonApiZone(this.zoneId)).let(selectStoreResource(identifier));
+    return this.store.pipe(
+      selectNgrxJsonApiZone(this.zoneId),
+      selectStoreResource(identifier)
+    );
   }
 
   /**
@@ -167,9 +173,10 @@ export class NgrxJsonApiZoneService {
    * @returns observable of the resources
    */
   public selectStoreResources(identifiers: ResourceIdentifier[]): Observable<StoreResource[]> {
-    return this.store
-      .let(selectNgrxJsonApiZone(this.zoneId))
-      .let(selectStoreResources(identifiers));
+    return this.store.pipe(
+      selectNgrxJsonApiZone(this.zoneId),
+      selectStoreResources(identifiers)
+    );
   }
 
   /**
@@ -188,12 +195,13 @@ export class NgrxJsonApiZoneService {
     } else {
       this.store.dispatch(new PatchStoreResourceAction(resource, this.zoneId));
     }
-    return this.store
-      .let(selectNgrxJsonApiZone(this.zoneId))
-      .let(selectOneQueryResult(queryId))
-      .finally(() => {
+    return this.store.pipe(
+      selectNgrxJsonApiZone(this.zoneId),
+      selectOneQueryResult(queryId),
+      finalize(() => {
         this.removeQuery(queryId);
-      });
+      })
+    );
   }
 
   /**
@@ -224,12 +232,13 @@ export class NgrxJsonApiZoneService {
     } else {
       this.store.dispatch(new PostStoreResourceAction(resource, this.zoneId));
     }
-    return this.store
-      .let(selectNgrxJsonApiZone(this.zoneId))
-      .let(selectOneQueryResult(queryId))
-      .finally(() => {
+    return this.store.pipe(
+      selectNgrxJsonApiZone(this.zoneId),
+      selectOneQueryResult(queryId),
+      finalize(() => {
         this.removeQuery(queryId);
-      });
+      })
+    );
   }
 
   /**
@@ -247,12 +256,13 @@ export class NgrxJsonApiZoneService {
     } else {
       this.store.dispatch(new DeleteStoreResourceAction(resourceId, this.zoneId));
     }
-    return this.store
-      .let(selectNgrxJsonApiZone(this.zoneId))
-      .let(selectOneQueryResult(queryId))
-      .finally(() => {
+    return this.store.pipe(
+      selectNgrxJsonApiZone(this.zoneId),
+      selectOneQueryResult(queryId),
+      finalize(() => {
         this.removeQuery(queryId);
-      });
+      })
+    );
   }
 
   /**
@@ -362,7 +372,7 @@ export class NgrxJsonApiService extends NgrxJsonApiZoneService {
   public get storeSnapshot() {
     if (!this._storeSnapshot) {
       this.store
-        .let(selectNgrxJsonApiDefaultZone())
+        .pipe(selectNgrxJsonApiDefaultZone())
         .subscribe(it => (this._storeSnapshot = it as NgrxJsonApiStore));
 
       if (!this._storeSnapshot) {
@@ -391,7 +401,9 @@ export class NgrxJsonApiService extends NgrxJsonApiZoneService {
     } else {
       queryResult$ = this.selectOneResults(newQuery.queryId, denormalise);
     }
-    return <Observable<QueryResult>>queryResult$.finally(() => this.removeQuery(newQuery.queryId));
+    return <Observable<QueryResult>>(
+      queryResult$.pipe(finalize(() => this.removeQuery(newQuery.queryId)))
+    );
   }
 
   private uuid() {
@@ -429,16 +441,21 @@ export class NgrxJsonApiService extends NgrxJsonApiZoneService {
   public denormaliseResource(
     storeResource$: Observable<StoreResource | StoreResource[]>
   ): Observable<StoreResource | StoreResource[]> {
-    return storeResource$.combineLatest(
-      this.store.let(selectNgrxJsonApiZone(this.zoneId)).map(state => state.data),
-      (storeResource: StoreResource | StoreResource[], storeData: NgrxJsonApiStoreData) => {
-        if (_.isArray(storeResource)) {
-          return denormaliseStoreResources(storeResource as Array<StoreResource>, storeData);
-        } else {
-          let resource = storeResource as StoreResource;
-          return denormaliseStoreResource(resource, storeData) as StoreResource;
+    return storeResource$.pipe(
+      combineLatest(
+        this.store.pipe(
+          selectNgrxJsonApiZone(this.zoneId),
+          map(state => state.data)
+        ),
+        (storeResource: StoreResource | StoreResource[], storeData: NgrxJsonApiStoreData) => {
+          if (_.isArray(storeResource)) {
+            return denormaliseStoreResources(storeResource as Array<StoreResource>, storeData);
+          } else {
+            let resource = storeResource as StoreResource;
+            return denormaliseStoreResource(resource, storeData) as StoreResource;
+          }
         }
-      }
+      )
     );
   }
 
