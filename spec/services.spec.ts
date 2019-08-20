@@ -2,7 +2,8 @@ import { inject, TestBed } from '@angular/core/testing';
 
 import * as _ from 'lodash';
 
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { NgrxJsonApiService } from '../src/services';
 
 import { denormaliseStoreResource } from '../src/utils';
@@ -20,11 +21,9 @@ describe('NgrxJsonApiService', () => {
     });
   });
 
-  beforeEach(
-    inject([NgrxJsonApiService], s => {
-      service = s;
-    })
-  );
+  beforeEach(inject([NgrxJsonApiService], s => {
+    service = s;
+  }));
 
   describe('findOne', () => {
     it('find a single StoreResource from the state', () => {
@@ -74,7 +73,7 @@ describe('NgrxJsonApiService', () => {
       let res;
       let storeResource = service
         .findOne({ query, fromServer: false, denormalise: true })
-        .map(it => it.data);
+        .pipe(map(it => it.data));
       storeResource.subscribe(it => (res = it));
       service.denormaliseResource(storeResource).subscribe(it => {
         expect(it).toEqual(res);
@@ -155,7 +154,7 @@ describe('NgrxJsonApiService', () => {
       let res: Array<StoreResource>;
       let storeResources: Observable<Array<StoreResource>> = service
         .findMany({ query, fromServer: false, denormalise: true })
-        .map(it => it.data);
+        .pipe(map(it => it.data));
       storeResources.subscribe(it => (res = it));
       service.denormaliseResource(storeResources).subscribe(it => {
         expect(it).toEqual(res);
@@ -225,55 +224,35 @@ describe('NgrxJsonApiService', () => {
       service.addResourceErrors({ type: 'Article', id: '1' }, [{ code: '0' }]);
       expect(service.storeSnapshot.data['Article']['1']).toBeDefined();
       expect(service.storeSnapshot.data['Article']['1'].errors.length).toBe(1);
-      expect(service.storeSnapshot.data['Article']['1'].errors[0].code).toBe(
-        '0'
-      );
+      expect(service.storeSnapshot.data['Article']['1'].errors[0].code).toBe('0');
 
-      service.removeResourceErrors({ type: 'Article', id: '1' }, [
-        { code: '0' },
-      ]);
+      service.removeResourceErrors({ type: 'Article', id: '1' }, [{ code: '0' }]);
       expect(service.storeSnapshot.data['Article']['1']).toBeDefined();
       expect(service.storeSnapshot.data['Article']['1'].errors.length).toBe(0);
 
       service.setResourceErrors({ type: 'Article', id: '1' }, [{ code: '0' }]);
       expect(service.storeSnapshot.data['Article']['1']).toBeDefined();
       expect(service.storeSnapshot.data['Article']['1'].errors.length).toBe(1);
-      expect(service.storeSnapshot.data['Article']['1'].errors[0].code).toBe(
-        '0'
-      );
+      expect(service.storeSnapshot.data['Article']['1'].errors[0].code).toBe('0');
     });
   });
 
   describe('getDenormalisedPath', () => {
     it('should get the denormalised path for a simple', () => {
       let path = 'title';
-      let resolvedPath = service.getDenormalisedPath(
-        path,
-        'Article',
-        resourceDefinitions
-      );
+      let resolvedPath = service.getDenormalisedPath(path, 'Article', resourceDefinitions);
       expect(resolvedPath).toEqual('attributes.title');
     });
 
     it('should get the denormalised path for an attribute in a related resource', () => {
       let path = 'author.firstName';
-      let resolvedPath = service.getDenormalisedPath(
-        path,
-        'Article',
-        resourceDefinitions
-      );
-      expect(resolvedPath).toEqual(
-        'relationships.author.reference.attributes.firstName'
-      );
+      let resolvedPath = service.getDenormalisedPath(path, 'Article', resourceDefinitions);
+      expect(resolvedPath).toEqual('relationships.author.reference.attributes.firstName');
     });
 
     it('should get the denormalised path for an attribute in a deeply related resource', () => {
       let path = 'author.profile.id';
-      let resolvedPath = service.getDenormalisedPath(
-        path,
-        'Article',
-        resourceDefinitions
-      );
+      let resolvedPath = service.getDenormalisedPath(path, 'Article', resourceDefinitions);
       expect(resolvedPath).toEqual(
         'relationships.author.reference.relationships.profile.reference.attributes.id'
       );
@@ -281,21 +260,13 @@ describe('NgrxJsonApiService', () => {
 
     it('should get the denormalised path for a hasOne related resource', () => {
       let path = 'author';
-      let resolvedPath = service.getDenormalisedPath(
-        path,
-        'Article',
-        resourceDefinitions
-      );
+      let resolvedPath = service.getDenormalisedPath(path, 'Article', resourceDefinitions);
       expect(resolvedPath).toEqual('relationships.author.reference');
     });
 
     it('should get the denormalised path for a deeply hasOne related resource', () => {
       let path = 'author.profile';
-      let resolvedPath = service.getDenormalisedPath(
-        path,
-        'Article',
-        resourceDefinitions
-      );
+      let resolvedPath = service.getDenormalisedPath(path, 'Article', resourceDefinitions);
       expect(resolvedPath).toEqual(
         'relationships.author.reference.relationships.profile.reference'
       );
@@ -303,11 +274,7 @@ describe('NgrxJsonApiService', () => {
 
     it('should get the denormalised path for a hasMany related resource', () => {
       let path = 'comments';
-      let resolvedPath = service.getDenormalisedPath(
-        path,
-        'Article',
-        resourceDefinitions
-      );
+      let resolvedPath = service.getDenormalisedPath(path, 'Article', resourceDefinitions);
       expect(resolvedPath).toEqual('relationships.comments.reference');
     });
   });

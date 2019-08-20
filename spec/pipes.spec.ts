@@ -1,4 +1,5 @@
 import { inject, TestBed } from '@angular/core/testing';
+import { map } from 'rxjs/operators';
 
 import * as _ from 'lodash';
 import {
@@ -28,11 +29,9 @@ describe('Pipes', () => {
   });
 
   describe('GetDenormalisedValuePipe', () => {
-    beforeEach(
-      inject([GetDenormalisedValuePipe], p => {
-        pipe = p;
-      })
-    );
+    beforeEach(inject([GetDenormalisedValuePipe], p => {
+      pipe = p;
+    }));
 
     let denormalisedR;
     beforeEach(() => {
@@ -66,19 +65,15 @@ describe('Pipes', () => {
   });
 
   describe('SelectStoreResourcePipe', () => {
-    beforeEach(
-      inject([SelectStoreResourcePipe], p => {
-        pipe = p;
-      })
-    );
+    beforeEach(inject([SelectStoreResourcePipe], p => {
+      pipe = p;
+    }));
   });
 
   describe('SelectStoreResourcesPipe', () => {
-    beforeEach(
-      inject([SelectStoreResourcesPipe], p => {
-        pipe = p;
-      })
-    );
+    beforeEach(inject([SelectStoreResourcesPipe], p => {
+      pipe = p;
+    }));
 
     it('should return Observable of StoreResource', () => {
       const ids = [{ id: '2', type: 'Article' }, { id: '1', type: 'Article' }];
@@ -90,11 +85,9 @@ describe('Pipes', () => {
   });
 
   describe('DenormaliseStoreResourcePipe', () => {
-    beforeEach(
-      inject([DenormaliseStoreResourcePipe], p => {
-        pipe = p;
-      })
-    );
+    beforeEach(inject([DenormaliseStoreResourcePipe], p => {
+      pipe = p;
+    }));
 
     it('should denormalise a Resource', () => {
       let query = {
@@ -104,7 +97,7 @@ describe('Pipes', () => {
       };
       let storeResource = pipe.service
         .findOne({ query, fromServer: false })
-        .map(it => it.data);
+        .pipe(map(it => it.data));
       let denormalised = pipe.transform(storeResource);
       denormalised.subscribe(it => {
         expect(_.get(it, 'relationships.author.reference')).toBeDefined();
@@ -117,7 +110,7 @@ describe('Pipes', () => {
       };
       let storeResource = pipe.service
         .findMany({ query, fromServer: false })
-        .map(it => it.data);
+        .pipe(map(it => it.data));
       let denormalised = pipe.transform(storeResource);
       denormalised.subscribe(it => {
         expect(_.get(it[0], 'relationships.author.reference')).toBeDefined();
