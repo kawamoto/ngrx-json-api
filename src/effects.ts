@@ -218,7 +218,7 @@ export class NgrxJsonApiEffects implements OnDestroy {
 
   @Effect()
   triggerReadOnQueryRefresh$ = this.actions$.pipe(
-    ofType(NgrxJsonApiActionTypes.API_QUERY_REFRESH),
+    ofType<ApiQueryRefreshAction>(NgrxJsonApiActionTypes.API_QUERY_REFRESH),
     withLatestFrom(this.store, (action: ApiQueryRefreshAction, store) => {
       let queryId = action.payload;
       let state = getNgrxJsonApiZone(store, action.zoneId);
@@ -271,7 +271,7 @@ export class NgrxJsonApiEffects implements OnDestroy {
 
   @Effect()
   applyResources$: Observable<Action> = this.actions$.pipe(
-    ofType(NgrxJsonApiActionTypes.API_APPLY_INIT),
+    ofType<ApiApplyInitAction>(NgrxJsonApiActionTypes.API_APPLY_INIT),
     filter(() => this.jsonApi.config.applyEnabled !== false),
     withLatestFrom(this.store, (action: ApiApplyInitAction, storeState: any) => {
       const ngrxstore = getNgrxJsonApiZone(storeState, action.zoneId);

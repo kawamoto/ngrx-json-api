@@ -10,7 +10,7 @@
     "moduleResolution": "node",
     "declaration": true,
     "strictNullChecks": false,
-    "strictFunctionTypes": false,
+    "strictFunctionTypes": true,
     "baseUrl": "./src",
     "types": [
       "deep-freeze",
