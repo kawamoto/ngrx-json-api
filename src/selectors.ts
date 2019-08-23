@@ -187,9 +187,9 @@ export class NgrxJsonApiSelectors {
     };
   }
 
-  public getStoreData$(): (state$: Store<NgrxJsonApiStore>) => Observable<NgrxJsonApiStoreData> {
-    return (state$: Store<NgrxJsonApiStore>): Observable<NgrxJsonApiStoreData> => {
-      return state$.select('data');
+  public getStoreData$(): (state$: Observable<NgrxJsonApiStore>) => Observable<NgrxJsonApiStoreData> {
+    return (state$: Observable<NgrxJsonApiStore>): Observable<NgrxJsonApiStoreData> => {
+      return state$.pipe(select('data'));
     };
   }
 
