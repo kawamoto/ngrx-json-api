@@ -760,6 +760,8 @@ export const getResourceFieldValueFromPath = (
 
     if (fields[i] === 'id') {
       return _.get(currentStoreResource, 'id', null);
+    } else if (fields[i] === 'type') {
+      return _.get(currentStoreResource, 'type', null);
     } else if (definition.attributes.hasOwnProperty(fields[i])) {
       return _.get(currentStoreResource, 'attributes.' + fields[i], null);
     } else if (definition.relationships.hasOwnProperty(fields[i])) {
