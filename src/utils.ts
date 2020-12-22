@@ -31,16 +31,11 @@ export function setIn(state: any, path: string, value: any) {
   if (value === currentValue) {
     return state;
   }
-  return _.setWith(
-    _.clone(state),
-    path,
-    value,
-    (nsValue: any, key: string, nsObject: any) => {
-      const newObject = _.clone(nsObject);
-      newObject[key] = nsValue;
-      return newObject;
-    }
-  );
+  return _.setWith(_.clone(state), path, value, (nsValue: any, key: string, nsObject: any) => {
+    const newObject = _.clone(nsObject);
+    newObject[key] = nsValue;
+    return newObject;
+  });
 }
 
 export const denormaliseObject = (
@@ -54,18 +49,14 @@ export const denormaliseObject = (
     Object.keys(resource.relationships).forEach(relationshipName => {
       const orginalRelationship = resource.relationships[relationshipName];
 
-      let data: ResourceIdentifier | Array<ResourceIdentifier> =
-        orginalRelationship.data;
+      let data: ResourceIdentifier | Array<ResourceIdentifier> = orginalRelationship.data;
       if (!_.isUndefined(data)) {
         let denormalizedRelation;
         if (data === null) {
           denormalizedRelation = data;
         } else if (!_.isArray(data)) {
           // one relation
-          let relatedRS = getSingleStoreResource(
-            <ResourceIdentifier>data,
-            storeData
-          );
+          let relatedRS = getSingleStoreResource(<ResourceIdentifier>data, storeData);
           denormalizedRelation = denormaliseStoreResource(
             relatedRS,
             storeData,
@@ -102,9 +93,7 @@ export const denormaliseStoreResources = (
 ): Array<StoreResource> => {
   let results: Array<StoreResource> = [];
   for (let item of items) {
-    results.push(
-      denormaliseStoreResource(item, storeData, bag, denormalizePersisted)
-    );
+    results.push(denormaliseStoreResource(item, storeData, bag, denormalizePersisted));
   }
   return results;
 };
@@ -128,12 +117,7 @@ export const denormaliseStoreResource = (
     }
 
     bag[storeResource.type][storeResource.id] = storeResource;
-    storeResource = denormaliseObject(
-      storeResource,
-      storeData,
-      bag,
-      denormalizePersisted
-    );
+    storeResource = denormaliseObject(storeResource, storeData, bag, denormalizePersisted);
     if (storeResource.persistedResource && denormalizePersisted) {
       storeResource.persistedResource = denormaliseObject(
         storeResource.persistedResource,
@@ -180,10 +164,7 @@ export const getDenormalisedPath = (
       throw new Error('Definition not found');
     }
     // if both attributes and relationships are missing, raise an error
-    if (
-      _.isUndefined(definition.attributes) &&
-      _.isUndefined(definition.relationships)
-    ) {
+    if (_.isUndefined(definition.attributes) && _.isUndefined(definition.relationships)) {
       throw new Error('Attributes or Relationships must be provided');
     }
 
@@ -228,10 +209,7 @@ export const getDenormalisedValue = (
  * Given two objects, it will merge the second in the first.
  *
  */
-export const updateResourceObject = (
-  original: Resource,
-  source: Resource
-): Resource => {
+export const updateResourceObject = (original: Resource, source: Resource): Resource => {
   // by default arrays would make use of concat.
   function customizer(objValue: any, srcValue: any) {
     if (_.isArray(objValue)) {
@@ -269,9 +247,7 @@ export const insertStoreResource = (
       loading: false,
     } as StoreResource;
   }
-  return _.isEqual(storeResources, newStoreResources)
-    ? storeResources
-    : newStoreResources;
+  return _.isEqual(storeResources, newStoreResources) ? storeResources : newStoreResources;
 };
 
 /**
@@ -348,10 +324,7 @@ export const updateResourceState = (
  * @param resource1
  * @returns
  */
-export const isEqualResource = (
-  resource0: Resource,
-  resource1: Resource
-): boolean => {
+export const isEqualResource = (resource0: Resource, resource1: Resource): boolean => {
   if (resource0 === resource1) {
     return true;
   }
@@ -414,9 +387,7 @@ export const updateStoreResource = (
     loading: false,
   } as StoreResource;
 
-  return _.isEqual(newState[resource.id], state[resource.id])
-    ? state
-    : newState;
+  return _.isEqual(newState[resource.id], state[resource.id]) ? state : newState;
 };
 
 export const updateQueriesForDeletedResource = (
@@ -425,18 +396,11 @@ export const updateQueriesForDeletedResource = (
   deletedId: ResourceIdentifier
 ): NgrxJsonApiStoreQueries => {
   const document = { data: deletedId };
-  let newState: NgrxJsonApiStoreQueries = updateQueryResults(
-    state,
-    queryId,
-    document
-  );
+  let newState: NgrxJsonApiStoreQueries = updateQueryResults(state, queryId, document);
   for (let queryId in state) {
     if (state.hasOwnProperty(queryId)) {
       let queryState = state[queryId];
-      if (
-        queryState.query.id === deletedId.id &&
-        queryState.query.type === deletedId.type
-      ) {
+      if (queryState.query.id === deletedId.id && queryState.query.type === deletedId.type) {
         // found a query for a resource that was deleted => modify to 404
         newState = clearQueryResult(newState, queryState.query.queryId);
         let notFoundError: ResourceError = { code: '404', status: 'Not Found' };
@@ -496,8 +460,7 @@ export const updateResourceErrors = (
     storeResource.errors = [];
     if (currentErrors) {
       for (let currentError of currentErrors) {
-        let remove =
-          errors && errors.filter(it => _.isEqual(it, currentError)).length > 0;
+        let remove = errors && errors.filter(it => _.isEqual(it, currentError)).length > 0;
         if (!remove) {
           storeResource.errors.push(currentError);
         }
@@ -508,11 +471,7 @@ export const updateResourceErrors = (
   return newState;
 };
 
-function rollbackResource(
-  newState: NgrxJsonApiStoreData,
-  type: string,
-  id: string
-) {
+function rollbackResource(newState: NgrxJsonApiStoreData, type: string, id: string) {
   let storeResource = newState[type][id];
   if (!storeResource.persistedResource) {
     delete newState[type][id];
@@ -548,26 +507,18 @@ export const rollbackStoreResources = (
   return newState;
 };
 
-export const deleteStoreResources = (
-  storeData: NgrxJsonApiStoreData,
-  query: Query
-) => {
+export const deleteStoreResources = (storeData: NgrxJsonApiStoreData, query: Query) => {
   let newState = { ...storeData };
   // if an id is not provided, all resources of the provided type will be deleted
   if (typeof query.id === 'undefined') {
     newState[query.type] = {};
   } else {
-    newState[query.type] = _.omit(newState[query.type], [
-      query.id,
-    ]) as NgrxJsonApiStoreResources;
+    newState[query.type] = _.omit(newState[query.type], [query.id]) as NgrxJsonApiStoreResources;
   }
   return newState;
 };
 
-export const clearQueryResult = (
-  storeData: NgrxJsonApiStoreQueries,
-  queryId: string
-) => {
+export const clearQueryResult = (storeData: NgrxJsonApiStoreQueries, queryId: string) => {
   let newQuery = { ...storeData[queryId] };
   delete newQuery.resultIds;
   delete newQuery.errors;
@@ -606,11 +557,7 @@ export const updateStoreDataFromResource = (
     );
     return newStoreData;
   } else if (_.isUndefined(storeData[resource.type][resource.id]) || override) {
-    let updatedStoreResources = insertStoreResource(
-      storeData[resource.type],
-      resource,
-      fromServer
-    );
+    let updatedStoreResources = insertStoreResource(storeData[resource.type], resource, fromServer);
 
     // check if nothing has changed
     if (updatedStoreResources !== storeData[resource.type]) {
@@ -620,11 +567,7 @@ export const updateStoreDataFromResource = (
     }
     return storeData;
   } else {
-    let updatedStoreResources = updateStoreResource(
-      storeData[resource.type],
-      resource,
-      fromServer
-    );
+    let updatedStoreResources = updateStoreResource(storeData[resource.type], resource, fromServer);
 
     // check if nothing has changed
     if (updatedStoreResources !== storeData[resource.type]) {
@@ -646,9 +589,7 @@ export const updateStoreDataFromPayload = (
     return storeData;
   }
 
-  let resources: Array<Resource> = _.isArray(data)
-    ? <Resource[]>data
-    : <Resource[]>[data];
+  let resources: Array<Resource> = _.isArray(data) ? <Resource[]>data : <Resource[]>[data];
   let included = <Array<Resource>>_.get(payload, 'included');
   if (!_.isUndefined(included)) {
     resources = [...resources, ...included];
@@ -778,9 +719,7 @@ export const removeQuery = (
 /**
  * Given a resource, it will return an object containing the resource id and type.
  */
-export const toResourceIdentifier = (
-  resource: Resource
-): ResourceIdentifier => {
+export const toResourceIdentifier = (resource: Resource): ResourceIdentifier => {
   return { type: resource.type, id: resource.id };
 };
 
@@ -815,10 +754,7 @@ export const getResourceFieldValueFromPath = (
       throw new Error('Definition not found');
     }
     // if both attributes and relationships are missing, raise an error
-    if (
-      _.isUndefined(definition.attributes) &&
-      _.isUndefined(definition.relationships)
-    ) {
+    if (_.isUndefined(definition.attributes) && _.isUndefined(definition.relationships)) {
       throw new Error('Attributes or Relationships must be provided');
     }
 
@@ -828,19 +764,13 @@ export const getResourceFieldValueFromPath = (
       return _.get(currentStoreResource, 'attributes.' + fields[i], null);
     } else if (definition.relationships.hasOwnProperty(fields[i])) {
       if (i === fields.length - 1) {
-        throw new Error(
-          'The last field in the filtering path cannot be a relation'
-        );
+        throw new Error('The last field in the filtering path cannot be a relation');
       }
       let resourceRelation = definition.relationships[fields[i]];
       if (resourceRelation.relationType === 'hasMany') {
         throw new Error('Cannot filter past a hasMany relation');
       } else {
-        let relation = _.get(
-          currentStoreResource,
-          'relationships.' + fields[i],
-          null
-        );
+        let relation = _.get(currentStoreResource, 'relationships.' + fields[i], null);
         if (!relation || !relation.data) {
           return null;
         } else {
@@ -865,19 +795,15 @@ export const filterResources = (
   filteringConfig?: NgrxJsonApiFilteringConfig
 ) => {
   return _.filter(resources, resource => {
-    if (
-      query.hasOwnProperty('params') &&
-      query.params.hasOwnProperty('filtering')
-    ) {
+    if (query.hasOwnProperty('params') && query.params.hasOwnProperty('filtering')) {
       return query.params.filtering.every(element => {
         let pathSeparator;
         let filteringOperators;
 
         if (!_.isUndefined(filteringConfig)) {
           pathSeparator = <string>_.get(filteringConfig, 'pathSeparator');
-          filteringOperators = <Array<FilteringOperator>>_.get(
-            filteringConfig,
-            'filteringOperators'
+          filteringOperators = <Array<FilteringOperator>>(
+            _.get(filteringConfig, 'filteringOperators')
           );
         }
         // resource type and attribute
@@ -900,16 +826,12 @@ export const filterResources = (
           return operator.comparison(element.value, resourceFieldValue);
         }
 
-        element.operator = element.hasOwnProperty('operator')
-          ? element.operator
-          : 'iexact';
+        element.operator = element.hasOwnProperty('operator') ? element.operator : 'iexact';
 
         switch (element.operator) {
           case 'iexact':
             if (_.isString(element.value) && _.isString(resourceFieldValue)) {
-              return (
-                element.value.toLowerCase() === resourceFieldValue.toLowerCase()
-              );
+              return element.value.toLowerCase() === resourceFieldValue.toLowerCase();
             } else {
               return element.value === resourceFieldValue;
             }
@@ -921,10 +843,7 @@ export const filterResources = (
             return _.includes(resourceFieldValue, element.value);
 
           case 'icontains':
-            return _.includes(
-              resourceFieldValue.toLowerCase(),
-              element.value.toLowerCase()
-            );
+            return _.includes(resourceFieldValue.toLowerCase(), element.value.toLowerCase());
 
           case 'in':
             if (_.isArray(element.value)) {
@@ -948,19 +867,13 @@ export const filterResources = (
             return _.startsWith(resourceFieldValue, element.value);
 
           case 'istartswith':
-            return _.startsWith(
-              resourceFieldValue.toLowerCase(),
-              element.value.toLowerCase()
-            );
+            return _.startsWith(resourceFieldValue.toLowerCase(), element.value.toLowerCase());
 
           case 'endswith':
             return _.endsWith(resourceFieldValue, element.value);
 
           case 'iendswith':
-            return _.endsWith(
-              resourceFieldValue.toLowerCase(),
-              element.value.toLowerCase()
-            );
+            return _.endsWith(resourceFieldValue.toLowerCase(), element.value.toLowerCase());
 
           default:
             return true;
@@ -972,9 +885,7 @@ export const filterResources = (
   });
 };
 
-export const generateIncludedQueryParams = (
-  included: Array<string>
-): string => {
+export const generateIncludedQueryParams = (included: Array<string>): string => {
   if (_.isEmpty(included)) {
     return '';
   }
@@ -990,9 +901,7 @@ export const generateFieldsQueryParams = (fields: Array<string>): string => {
   return 'fields=' + fields.join();
 };
 
-export const generateFilteringQueryParams = (
-  filtering: Array<FilteringParam>
-): string => {
+export const generateFilteringQueryParams = (filtering: Array<FilteringParam>): string => {
   if (_.isEmpty(filtering)) {
     return '';
   }
@@ -1008,18 +917,11 @@ export const generateFilteringQueryParams = (
   return filteringParams.join('&');
 };
 
-export const generateSortingQueryParams = (
-  sorting: Array<SortingParam>
-): string => {
+export const generateSortingQueryParams = (sorting: Array<SortingParam>): string => {
   if (_.isEmpty(sorting)) {
     return '';
   }
-  return (
-    'sort=' +
-    sorting
-      .map(f => (f.direction === Direction.ASC ? '' : '-') + f.api)
-      .join(',')
-  );
+  return 'sort=' + sorting.map(f => (f.direction === Direction.ASC ? '' : '-') + f.api).join(',');
 };
 
 export const generateQueryParams = (...params: Array<string>) => {
@@ -1031,10 +933,7 @@ export const generateQueryParams = (...params: Array<string>) => {
   }
 };
 
-export const generatePayload = (
-  resource: StoreResource,
-  operation: OperationType
-): Payload => {
+export const generatePayload = (resource: StoreResource, operation: OperationType): Payload => {
   let payload: Payload = {
     query: {
       type: resource.type,
@@ -1145,8 +1044,7 @@ const collectReferencesForResource = (
     if (resource.relationships.hasOwnProperty(relationshipName)) {
       let data = resource.relationships[relationshipName].data;
       if (data) {
-        let dependencyIds: Array<ResourceIdentifier> =
-          data instanceof Array ? data : [data];
+        let dependencyIds: Array<ResourceIdentifier> = data instanceof Array ? data : [data];
         for (let dependencyId of dependencyIds) {
           let dependencyKey = toKey(dependencyId);
           if (!usedResources[dependencyKey]) {
@@ -1174,8 +1072,7 @@ const collectReferences = (state: NgrxJsonApiStore, usedResources: any) => {
             if (usedResources[toKey(resource)]) {
               // in use, do not collect its relations
               hasChanges =
-                hasChanges ||
-                collectReferencesForResource(state, usedResources, resource);
+                hasChanges || collectReferencesForResource(state, usedResources, resource);
             }
           }
         }
@@ -1256,14 +1153,10 @@ export const sortPendingChanges = (
       Object.keys(resource.relationships).forEach(relationshipName => {
         let data = resource.relationships[relationshipName].data;
         if (data) {
-          let dependencyIds: Array<ResourceIdentifier> =
-            data instanceof Array ? data : [data];
+          let dependencyIds: Array<ResourceIdentifier> = data instanceof Array ? data : [data];
           for (let dependencyId of dependencyIds) {
             let dependencyKey = toKey(dependencyId);
-            if (
-              pendingMap[dependencyKey] &&
-              pendingMap[dependencyKey].state === 'CREATED'
-            ) {
+            if (pendingMap[dependencyKey] && pendingMap[dependencyKey].state === 'CREATED') {
               // we have a dependency between two unsaved objects
               dependencies[key].push(pendingMap[dependencyKey]);
             }
@@ -1300,9 +1193,7 @@ const visitPending = (
 ) => {
   let key = toKey(pendingResource);
   if (predecessors.indexOf(key) >= 0) {
-    throw new Error(
-      'Cyclic dependency: ' + key + ' with ' + JSON.stringify(predecessors)
-    );
+    throw new Error('Cyclic dependency: ' + key + ' with ' + JSON.stringify(predecessors));
   }
 
   if (context.visited[i]) {
@@ -1315,12 +1206,7 @@ const visitPending = (
 
   let preds = predecessors.concat(key);
   for (let child of outgoing) {
-    visitPending(
-      child,
-      context.pendingResources.indexOf(child),
-      preds,
-      context
-    );
+    visitPending(child, context.pendingResources.indexOf(child), preds, context);
   }
 
   context.sorted[--context.cursor] = pendingResource;
@@ -1334,53 +1220,31 @@ function collectPendingChange(
   includeNew: boolean
 ) {
   let storeResource = state[id.type][id.id];
-  if (
-    storeResource.state !== 'IN_SYNC' &&
-    (storeResource.state !== 'NEW' || includeNew)
-  ) {
+  if (storeResource.state !== 'IN_SYNC' && (storeResource.state !== 'NEW' || includeNew)) {
     pending.push(storeResource);
   }
 
   for (let includeElement of include) {
     if (includeElement.length > 0) {
       let relationshipName = includeElement[0];
-      if (
-        storeResource.relationships &&
-        storeResource.relationships[relationshipName]
-      ) {
+      if (storeResource.relationships && storeResource.relationships[relationshipName]) {
         let data = storeResource.relationships[relationshipName].data;
         if (data) {
           let relationInclude: Array<Array<string>> = [];
           include
             .filter(
-              relIncludeElem =>
-                relIncludeElem.length >= 2 &&
-                relIncludeElem[0] == relationshipName
+              relIncludeElem => relIncludeElem.length >= 2 && relIncludeElem[0] == relationshipName
             )
-            .forEach(relIncludeElem =>
-              relationInclude.push(relIncludeElem.slice(1))
-            );
+            .forEach(relIncludeElem => relationInclude.push(relIncludeElem.slice(1)));
 
           if (_.isArray(data)) {
             let relationIds = data as Array<ResourceIdentifier>;
             relationIds.forEach(relationId =>
-              collectPendingChange(
-                state,
-                pending,
-                relationId,
-                relationInclude,
-                includeNew
-              )
+              collectPendingChange(state, pending, relationId, relationInclude, includeNew)
             );
           } else {
             let relationId = data as ResourceIdentifier;
-            collectPendingChange(
-              state,
-              pending,
-              relationId,
-              relationInclude,
-              includeNew
-            );
+            collectPendingChange(state, pending, relationId, relationInclude, includeNew);
           }
         }
       }
@@ -1401,10 +1265,7 @@ export function getPendingChanges(
     Object.keys(state).forEach(type => {
       Object.keys(state[type]).forEach(id => {
         let storeResource = state[type][id];
-        if (
-          storeResource.state !== 'IN_SYNC' &&
-          (storeResource.state !== 'NEW' || includeNew)
-        ) {
+        if (storeResource.state !== 'IN_SYNC' && (storeResource.state !== 'NEW' || includeNew)) {
           pending.push(storeResource);
         }
       });
@@ -1417,13 +1278,7 @@ export function getPendingChanges(
       }
     }
     for (let id of ids) {
-      collectPendingChange(
-        state,
-        pending,
-        id,
-        relationshipInclusions,
-        includeNew
-      );
+      collectPendingChange(state, pending, id, relationshipInclusions, includeNew);
     }
     pending = _.uniqBy(pending, function(e) {
       return e.type + '####' + e.id;
