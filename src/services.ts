@@ -161,10 +161,12 @@ export class NgrxJsonApiZoneService {
    * @param identifier of the resource
    * @returns observable of the resource
    */
-  public selectStoreResource(identifier: ResourceIdentifier): Observable<StoreResource> {
+  public selectStoreResource<T extends StoreResource = StoreResource>(
+    identifier: ResourceIdentifier
+  ): Observable<StoreResource> {
     return this.store.pipe(
       selectNgrxJsonApiZone(this.zoneId),
-      selectStoreResource(identifier)
+      selectStoreResource<T>(identifier)
     );
   }
 
@@ -172,10 +174,12 @@ export class NgrxJsonApiZoneService {
    * @param identifiers of the resources
    * @returns observable of the resources
    */
-  public selectStoreResources(identifiers: ResourceIdentifier[]): Observable<StoreResource[]> {
+  public selectStoreResources<T extends StoreResource = StoreResource>(
+    identifiers: ResourceIdentifier[]
+  ): Observable<StoreResource[]> {
     return this.store.pipe(
       selectNgrxJsonApiZone(this.zoneId),
-      selectStoreResources(identifiers)
+      selectStoreResources<T>(identifiers)
     );
   }
 
