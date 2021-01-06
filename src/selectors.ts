@@ -58,7 +58,9 @@ export function selectStoreQuery(
 
 export function selectStoreResourcesOfType(
   type: string
-): (state: Observable<NgrxJsonApiStore>) => Observable<NgrxJsonApiStoreResources> {
+): (
+  state: Observable<NgrxJsonApiStore>
+) => Observable<NgrxJsonApiStoreResources> {
   return (state$: Observable<NgrxJsonApiStore>) => {
     return state$.pipe(
       map(state => state.data),
@@ -115,8 +117,8 @@ export function selectManyQueryResult(
           };
           return queryResult;
         } else {
-          let results = storeQuery.resultIds.map(id =>
-            state.data[id.type] ? state.data[id.type][id.id] : undefined
+          let results = storeQuery.resultIds.map(
+            id => (state.data[id.type] ? state.data[id.type][id.id] : undefined)
           );
           if (denormalize) {
             results = denormaliseStoreResources(results, state.data);
@@ -151,7 +153,9 @@ export function selectOneQueryResult(
           return queryResult;
         } else {
           if (storeQuery.resultIds.length >= 2) {
-            throw new Error('expected single result for query ' + storeQuery.query.queryId);
+            throw new Error(
+              'expected single result for query ' + storeQuery.query.queryId
+            );
           }
 
           let resultId = storeQuery.resultIds[0];
@@ -191,8 +195,12 @@ export class NgrxJsonApiSelectors {
     };
   }
 
-  public getStoreData$(): (state$: Observable<NgrxJsonApiStore>) => Observable<NgrxJsonApiStoreData> {
-    return (state$: Observable<NgrxJsonApiStore>): Observable<NgrxJsonApiStoreData> => {
+  public getStoreData$(): (
+    state$: Observable<NgrxJsonApiStore>
+  ) => Observable<NgrxJsonApiStoreData> {
+    return (
+      state$: Observable<NgrxJsonApiStore>
+    ): Observable<NgrxJsonApiStoreData> => {
       return state$.pipe(select('data'));
     };
   }
