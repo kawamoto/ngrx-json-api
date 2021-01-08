@@ -146,7 +146,6 @@ export interface Payload {
  * Specifies a GET query with parameters.
  */
 export interface Query {
-
   /**
    * Uniquely identifies the query in the store
    */
@@ -255,7 +254,6 @@ export interface SortingParam {
 }
 
 export interface QueryResult extends StoreQuery {
-
   /**
    * Holds the resources from the query results. The field is dynamically populated by denormalizing
    * StoreQuery.queryResults with the corresponding resources from the store.
@@ -334,4 +332,30 @@ export interface StoreResource extends Resource {
    * to the server.
    */
   hasTemporaryId?: boolean;
+}
+
+export interface Attributes {
+  [key: string]: any;
+}
+
+export type Relationships<T> = { [key in keyof T]: ResourceRelationship };
+
+export interface TypedResource<T extends Attributes, U> extends Resource {
+  attributes?: { [key in keyof T]: T[key] };
+  relationships?: { [key in keyof U]: U[key] };
+}
+
+export interface TypedStoreResource<T extends Attributes, U>
+  extends StoreResource {
+  persistedResource?: TypedResource<T, U>;
+  attributes?: { [key in keyof T]: T[key] };
+  relationships?: { [key in keyof U]: U[key] };
+}
+
+export interface HasOneResourceRelationship<T> extends ResourceRelationship {
+  data?: T;
+}
+
+export interface HasManyResourceRelationship<T> extends ResourceRelationship {
+  data?: Array<T>;
 }
