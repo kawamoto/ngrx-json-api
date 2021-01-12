@@ -1,6 +1,6 @@
 import * as _ from 'lodash';
 
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 
 import { filter, map } from 'rxjs/operators';
 
@@ -73,6 +73,9 @@ export function selectStoreResource<T extends StoreResource = StoreResource>(
   identifier: ResourceIdentifier
 ) {
   return (state$: Observable<NgrxJsonApiStore>) => {
+    if (!identifier) {
+      return of(undefined);
+    }
     return state$.pipe(
       selectStoreResourcesOfType(identifier.type),
       map(resources => (resources ? resources[identifier.id] : undefined) as T)
@@ -84,6 +87,9 @@ export function selectStoreResources<T extends StoreResource = StoreResource>(
   identifiers: ResourceIdentifier[]
 ) {
   return (state$: Observable<NgrxJsonApiStore>) => {
+    if (!identifiers || !identifiers.length) {
+      return of([]);
+    }
     return state$.pipe(
       map(state => state.data),
       map(data => {

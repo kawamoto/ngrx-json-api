@@ -171,7 +171,7 @@ export class NgrxJsonApiZoneService {
    */
   public selectStoreResource<T extends StoreResource = StoreResource>(
     identifier: ResourceIdentifier
-  ): Observable<StoreResource> {
+  ): Observable<T> {
     return this.store.pipe(
       selectNgrxJsonApiZone(this.zoneId),
       selectStoreResource<T>(identifier)
@@ -184,7 +184,7 @@ export class NgrxJsonApiZoneService {
    */
   public selectStoreResources<T extends StoreResource = StoreResource>(
     identifiers: ResourceIdentifier[]
-  ): Observable<StoreResource[]> {
+  ): Observable<T[]> {
     return this.store.pipe(
       selectNgrxJsonApiZone(this.zoneId),
       selectStoreResources<T>(identifiers)
@@ -204,11 +204,7 @@ export class NgrxJsonApiZoneService {
         }
       }),
       switchMap(id => {
-        if (id) {
-          return this.selectStoreResource<T>(id);
-        } else {
-          return of(null);
-        }
+        return this.selectStoreResource<T>(id);
       })
     );
   }
@@ -240,11 +236,7 @@ export class NgrxJsonApiZoneService {
         return ids.reduce((pre, val) => pre.concat(val), []);
       }),
       switchMap(ids => {
-        if (ids && ids.length) {
-          return this.selectStoreResources<T>(ids);
-        } else {
-          return of([]);
-        }
+        return this.selectStoreResources<T>(ids);
       })
     );
   }
