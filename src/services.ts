@@ -1,7 +1,7 @@
 import * as _ from 'lodash';
 
-import { Observable } from 'rxjs';
-import { finalize, combineLatest, map } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { finalize, combineLatest, map, switchMap } from 'rxjs/operators';
 
 import { Store } from '@ngrx/store';
 
@@ -188,6 +188,64 @@ export class NgrxJsonApiZoneService {
     return this.store.pipe(
       selectNgrxJsonApiZone(this.zoneId),
       selectStoreResources<T>(identifiers)
+    );
+  }
+
+  public selectRelatedStoreResource<T extends StoreResource = StoreResource>(
+    source$: Observable<StoreResource>,
+    key: string
+  ): Observable<T> {
+    return source$.pipe(
+      map(source => {
+        if (source.relationships[key]) {
+          return source.relationships[key].data;
+        } else {
+          return undefined;
+        }
+      }),
+      switchMap(id => {
+        if (id) {
+          return this.selectStoreResource<T>(id);
+        } else {
+          return of(null);
+        }
+      })
+    );
+  }
+
+  public selectRelatedStoreResources<T extends StoreResource = StoreResource>(
+    source$: Observable<StoreResource | StoreResource[]>,
+    key: string
+  ): Observable<T[]> {
+    return source$.pipe(
+      map(source => {
+        if (Array.isArray(source)) {
+          return source.map(storeResource => {
+            if (storeResource.relationships[key]) {
+              return storeResource.relationships[key].data;
+            } else {
+              return undefined;
+            }
+          });
+        } else {
+          if (source.relationships[key]) {
+            return source.relationships[key].data;
+          } else {
+            return undefined;
+          }
+        }
+      }),
+      map(ids => {
+        // flatten. ids possibly contain array
+        return ids.reduce((pre, val) => pre.concat(val), []);
+      }),
+      switchMap(ids => {
+        if (ids && ids.length) {
+          return this.selectStoreResources<T>(ids);
+        } else {
+          return of([]);
+        }
+      })
     );
   }
 
