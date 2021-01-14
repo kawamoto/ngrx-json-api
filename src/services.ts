@@ -225,15 +225,18 @@ export class NgrxJsonApiZoneService {
           });
         } else {
           if (source.relationships[key]) {
-            return source.relationships[key].data;
+            return [source.relationships[key].data];
           } else {
-            return undefined;
+            return [undefined];
           }
         }
       }),
       map(ids => {
         // flatten. ids possibly contain array
-        return ids.reduce((pre: any[], val: any[]) => pre.concat(val), []);
+        return ids.reduce(
+          (pre: any[], val: any[]) => pre.concat(val),
+          []
+        ) as ResourceIdentifier[];
       }),
       switchMap(ids => {
         return this.selectStoreResources<T>(ids);

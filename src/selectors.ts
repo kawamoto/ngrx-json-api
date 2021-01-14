@@ -87,13 +87,17 @@ export function selectStoreResources<T extends StoreResource = StoreResource>(
   identifiers: ResourceIdentifier[]
 ) {
   return (state$: Observable<NgrxJsonApiStore>) => {
-    if (!identifiers || !identifiers.length) {
+    if (!identifiers) {
+      return of([]);
+    }
+    const ids = identifiers.filter(v => v);
+    if (!ids.length) {
       return of([]);
     }
     return state$.pipe(
       map(state => state.data),
       map(data => {
-        return identifiers.map(identifier => {
+        return ids.map(identifier => {
           if (!data || !data[identifier.type]) {
             return undefined;
           }
