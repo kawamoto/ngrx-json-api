@@ -233,7 +233,7 @@ export class NgrxJsonApiZoneService {
       }),
       map(ids => {
         // flatten. ids possibly contain array
-        return ids.reduce((pre, val) => pre.concat(val), []);
+        return ids.reduce((pre: any[], val: any[]) => pre.concat(val), []);
       }),
       switchMap(ids => {
         return this.selectStoreResources<T>(ids);
